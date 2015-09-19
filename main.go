@@ -9,5 +9,10 @@ import (
 func main() {
 	fmt.Println("Welcome to postman runner!")
 	runner := core.NewPostmanRunner()
-	runner.Run(os.Args[1])
+	result := runner.Run(os.Args[1])
+	
+	if result {
+		os.Exit(0)
+	}
+	os.Exit(1)	
 }

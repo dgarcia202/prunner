@@ -10,11 +10,11 @@ type request struct {
 	client, secureClient *http.Client
 }
 
-func (this request) run() error {
+func (this request) run() (bool, error) {
 	request, _ := http.NewRequest(this.method, this.url, nil)
 	resp, err := this.client.Do(request)
 	if err != nil {
-		return err
+		return false, err
 	}
 	
 	display := "OK"
@@ -22,11 +22,11 @@ func (this request) run() error {
 		display = "KO"
 	}
 	
-	fmt.Printf("%s %d %s\r\n", display, resp.StatusCode, this.url)
+	fmt.Printf("%s %d %s\r\n", display, resp.StatusCode, this.name)
 	
-	return nil
+	return display == "OK", nil
 }
 
 func (this request) GoString() string {
-	return this.url
+	return this.name
 }

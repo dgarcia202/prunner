@@ -29,24 +29,34 @@ func NewPostmanRunner() *postmanRunner {
 	return r
 }
 
-func (this postmanRunner) Run(url string) {
+func (this postmanRunner) Run(url string) bool {
 	
 	this.source = url
 	
 	if err := this.downloadRequestData(); err != nil {
 		fmt.Println(err)
-		return
+		return false
 	}
 	
+	failedCount := 0
 	if len(*this.requests) > 0 {
 		fmt.Println("Running requests.")		
 		for _, r := range *this.requests {
-			if err := r.run(); err != nil {
+			result, err := r.run()
+			if err != nil {
 				fmt.Println(err)
-				return				
+				return false		
+			}
+			
+			if !result {
+				failedCount++
 			}
 		}
 	}
+	
+	fmt.Printf("%d requests returned non success status.\r\n", failedCount)	
+	
+	return failedCount == 0
 }
 
 func (this postmanRunner) downloadRequestData() error {
