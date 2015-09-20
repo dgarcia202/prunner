@@ -6,6 +6,12 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"crypto/tls"
+	"strings"
+)
+
+const (
+	urlSource = iota
+	fileSource
 )
 
 type postmanRunner struct {
@@ -13,6 +19,7 @@ type postmanRunner struct {
 	requests *[]request
 	client, secureClient *http.Client
 	concise bool
+	sourceType int
 }
 
 func NewPostmanRunner() *postmanRunner {
@@ -35,9 +42,21 @@ func (this postmanRunner) ouputMessage(message string) {
 	}
 }
 
+func (this postmanRunner) recogniceSourceType(source string) int {
+	if strings.HasPrefix(source, "http://") || strings.HasPrefix(source, "https://") {
+		this.ouputMessage("Source recognized as URL.")
+		return urlSource	
+	} else {
+		this.ouputMessage("Source recognized as local file.")
+		return fileSource		
+	}
+	
+}
+
 func (this postmanRunner) Export(source string) bool {
 
 	this.source = source
+	this.sourceType = this.recogniceSourceType(source)
 	
 	buffer, err := this.readDataFromUrlSource()
 	if err != nil && err.Error() != "EOF" {
@@ -57,9 +76,10 @@ func (this postmanRunner) Export(source string) bool {
 func (this postmanRunner) Run(source string, concise bool) bool {
 	
 	this.source = source
+	this.sourceType = this.recogniceSourceType(source)
 	this.concise = concise
 	
-	if err := this.downloadRequestData(); err != nil {
+	if err := this.obtainRequestData(); err != nil {
 		fmt.Println(err)
 		return false
 	}
@@ -100,9 +120,26 @@ func (this postmanRunner) readDataFromUrlSource() ([]byte, error) {
 	return buffer, err
 }
 
-func (this postmanRunner) downloadRequestData() error {
+func (this postmanRunner) readDataFromFileSource() ([]byte, error) {
+	buffer, err := ioutil.ReadFile(this.source)
+	if err != nil {
+		return nil, err
+	}
 
-	buffer, err := this.readDataFromUrlSource()
+	return buffer, nil
+}
+	
+func (this postmanRunner) obtainRequestData() error {
+
+	var buffer []byte
+	var err error
+	
+	if this.sourceType == urlSource {
+		buffer, err = this.readDataFromUrlSource()	
+	} else {
+		buffer, err = this.readDataFromFileSource()
+	}
+	
 	if err != nil && err.Error() != "EOF" {
 		fmt.Println(err.Error())
 		return err
