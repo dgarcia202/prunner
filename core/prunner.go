@@ -36,8 +36,21 @@ func (this postmanRunner) ouputMessage(message string) {
 }
 
 func (this postmanRunner) Export(source string) bool {
-	this.ouputMessage("Not implemented feature.")
+
 	this.source = source
+	
+	buffer, err := this.readDataFromUrlSource()
+	if err != nil && err.Error() != "EOF" {
+		fmt.Println(err.Error())
+		return false
+	}
+
+	if err = ioutil.WriteFile("source.json", buffer, 0644); err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+	
+	fmt.Println("Source data exported to file 'source.json'.")
 	return true
 }
 
@@ -72,18 +85,24 @@ func (this postmanRunner) Run(source string, concise bool) bool {
 	return failedCount == 0
 }
 
-func (this postmanRunner) downloadRequestData() error {
-
+func (this postmanRunner) readDataFromUrlSource() ([]byte, error) {
 	resp, err := this.secureClient.Get(this.source)	
 	if err != nil {
-		return err
+		return nil, err
 	}
 		
 	defer resp.Body.Close()
 	
 	buffer, _ := ioutil.ReadAll(resp.Body)
+
+	_, err = resp.Body.Read(buffer)	
 	
-	_, err = resp.Body.Read(buffer)
+	return buffer, err
+}
+
+func (this postmanRunner) downloadRequestData() error {
+
+	buffer, err := this.readDataFromUrlSource()
 	if err != nil && err.Error() != "EOF" {
 		fmt.Println(err.Error())
 		return err
