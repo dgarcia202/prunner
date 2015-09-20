@@ -12,7 +12,7 @@ type postmanRunner struct {
 	source string
 	requests *[]request
 	client, secureClient *http.Client
-	
+	concise bool
 }
 
 func NewPostmanRunner() *postmanRunner {
@@ -29,9 +29,22 @@ func NewPostmanRunner() *postmanRunner {
 	return r
 }
 
-func (this postmanRunner) Run(url string) bool {
+func (this postmanRunner) ouputMessage(message string) {
+	if !this.concise {
+		fmt.Println(message)
+	}
+}
+
+func (this postmanRunner) Export(source string) bool {
+	this.ouputMessage("Not implemented feature.")
+	this.source = source
+	return true
+}
+
+func (this postmanRunner) Run(source string, concise bool) bool {
 	
-	this.source = url
+	this.source = source
+	this.concise = concise
 	
 	if err := this.downloadRequestData(); err != nil {
 		fmt.Println(err)
@@ -40,7 +53,7 @@ func (this postmanRunner) Run(url string) bool {
 	
 	failedCount := 0
 	if len(*this.requests) > 0 {
-		fmt.Println("Running requests.")		
+		this.ouputMessage("Running requests.")		
 		for _, r := range *this.requests {
 			result, err := r.run()
 			if err != nil {
@@ -96,7 +109,6 @@ func (this postmanRunner) downloadRequestData() error {
 		*this.requests = append(*this.requests, r)
 	}
 	
-	fmt.Printf("Downloaded %d request definitions.\r\n", len(*this.requests))
-	
+	this.ouputMessage(fmt.Sprintf("Downloaded %d request definitions.", len(*this.requests)))
 	return nil
 }
